@@ -24,7 +24,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Component\Translation\TranslatorInterface;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 
 /**
@@ -51,7 +51,8 @@ class DefaultController extends AbstractController
      */
     public function index(Request $request)
     {
-        $search  = $request->get('q');
+        $search = $request->get('q');
+        
         $usuario = $this->getUser();
         $unidade = $usuario->getLotacao()->getUnidade();
        
@@ -151,9 +152,7 @@ class DefaultController extends AbstractController
         $isAdmin     = $currentUser->isAdmin();
         
         $form = $this
-            ->createForm(EntityType::class, $entity, [
-                'admin' => $isAdmin,
-            ])
+            ->createForm(EntityType::class, $entity)
             ->handleRequest($request);
         
         if (!$isAdmin && $entity->getId()) {
@@ -254,7 +253,7 @@ class DefaultController extends AbstractController
                 $isNew = !$entity->getId();
 
                 if ($isNew) {
-                    $entity->setAlgorithm('bcrypt');
+                    $entity->setAlgorithm('md5');
                     $entity->setSalt(null);
 
                     $encoded = $this->passwordEncoder->encodePassword(
@@ -279,7 +278,7 @@ class DefaultController extends AbstractController
                     $em->getRepository(Entity::class)->updateUnidade($entity, $lotacao->getUnidade());
                 }
 
-                $this->addFlash('success', $translator->trans('label.add_success', [], self::DOMAIN));
+                $this->addFlash('success', $translator->trans('label.add_sucess', [], self::DOMAIN));
                 
                 return $this->redirectToRoute('novosga_users_edit', [ 'id' => $entity->getId() ]);
             } catch (Exception $e) {

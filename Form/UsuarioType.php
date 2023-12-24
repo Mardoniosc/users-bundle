@@ -14,6 +14,7 @@ namespace Novosga\UsersBundle\Form;
 use Novosga\Entity\Usuario;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
@@ -36,9 +37,13 @@ class UsuarioType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        $entity  = $options['data'];
-        $isAdmin = $options['admin'];
-        
+        $entity = $options['data'];
+
+        $permissoesLista['Peso Senhas'] = 'ROLE_PESO_SENHAS';
+        $permissoesLista['Limpeza de Dados'] = 'ROLE_LIMPEZA_DADOS';
+        $permissoesLista['Reiniciar Senhas'] = 'ROLE_RENICIAR_SENHAS';
+        $permissoesLista['Visualizar Permissão de Roles'] = 'ROLE_VISUALIZAR_PERMISSOES';
+
         $builder
             ->add('login', TextType::class, [
                 'attr' => [
@@ -47,17 +52,19 @@ class UsuarioType extends AbstractType
                 ],
                 'constraints' => [
                     new NotBlank(),
-                    new Length([ 'min' => 3, 'max' => 30 ]),
+                    new Length(['min' => 3, 'max' => 30]),
                     new Regex("/^[a-zA-Z0-9\.]+$/"),
                 ],
                 'label' => 'form.user.username',
+                'translation_domain' => 'NovosgaUsersBundle',
             ])
             ->add('nome', TextType::class, [
                 'constraints' => [
                     new NotBlank(),
-                    new Length([ 'min' => 3, 'max' => 20 ]),
+                    new Length(['min' => 3, 'max' => 20]),
                 ],
                 'label' => 'form.user.name',
+                'translation_domain' => 'NovosgaUsersBundle',
             ])
             ->add('email', EmailType::class, [
                 'required' => false,
@@ -65,26 +72,32 @@ class UsuarioType extends AbstractType
                     new Email(),
                 ],
                 'label' => 'form.user.email',
+                'translation_domain' => 'NovosgaUsersBundle',
             ])
             ->add('sobrenome', TextType::class, [
                 'constraints' => [
                     new NotNull(),
-                    new Length([ 'max' => 100 ]),
+                    new Length(['max' => 100]),
                 ],
                 'label' => 'form.user.lastname',
+                'translation_domain' => 'NovosgaUsersBundle',
             ])
             ->add('lotacoesRemovidas', HiddenType::class, [
                 'mapped' => false,
                 'required' => false,
+                'translation_domain' => 'NovosgaUsersBundle',
             ]);
+            
 
-        if ($isAdmin) {
-            $builder->add('admin', CheckboxType::class, [
-                'required' => false,
-                'label' => 'form.user.admin',
+        if (str_contains($_SESSION['_sf2_attributes']['_security_main'], 'ROLE_VISUALIZAR_PERMISSOES')) {
+            $builder->add('permissoes', ChoiceType::class, [
+                'label' => 'roles.individual.usuario',
+                'multiple' => true,
+                'expanded' => true,
+                'choices' => $permissoesLista,
             ]);
         }
-        
+
         if ($entity->getId()) {
             $builder->add('ativo', CheckboxType::class, [
                 'required' => false,
@@ -92,6 +105,7 @@ class UsuarioType extends AbstractType
                     new NotNull(),
                 ],
                 'label' => 'form.user.active',
+                'translation_domain' => 'NovosgaUsersBundle',
             ]);
         } else {
             $builder
@@ -99,19 +113,20 @@ class UsuarioType extends AbstractType
                     'mapped' => false,
                     'constraints' => [
                         new NotNull(),
-                        new Length([ 'min' => 6 ]),
+                        new Length(['min' => 6]),
                     ],
                     'label' => 'form.user.password',
+                    'translation_domain' => 'NovosgaUsersBundle',
                 ])
                 ->add('confirmacaoSenha', PasswordType::class, [
                     'mapped' => false,
                     'constraints' => [
-                        new Length([ 'min' => 6 ]),
+                        new Length(['min' => 6]),
                         new Callback(function ($object, ExecutionContextInterface $context, $payload) {
                             $form        = $context->getRoot();
                             $senha       = $form->get('senha');
                             $confirmacao = $form->get('confirmacaoSenha');
-                            
+
                             if ($senha->getData() !== $confirmacao->getData()) {
                                 $context
                                     ->buildViolation('error.password_confirm')
@@ -122,10 +137,11 @@ class UsuarioType extends AbstractType
                         }),
                     ],
                     'label' => 'form.user.password_confirm',
+                    'translation_domain' => 'NovosgaUsersBundle',
                 ]);
         }
     }
-    
+
     /**
      *
      * @param OptionsResolver $resolver
@@ -134,9 +150,7 @@ class UsuarioType extends AbstractType
     {
         $resolver
             ->setDefaults([
-                'data_class' => Usuario::class,
-                'translation_domain' => 'NovosgaUsersBundle',
-            ])
-            ->setRequired('admin');
+                'data_class' => Usuario::class
+            ]);
     }
 }
